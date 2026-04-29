@@ -49,6 +49,7 @@
 
 // When targeting native platforms (i.e. NOT emscripten), one of IMGUI_IMPL_WEBGPU_BACKEND_DAWN
 // or IMGUI_IMPL_WEBGPU_BACKEND_WGPU must be provided. See imgui_impl_wgpu.h for more details.
+
 #ifndef __EMSCRIPTEN__
     // FIX(zig-gamedev): zgpu is currently stuck on an old version of Dawn, we can workaround this by not defining these macros
     // #if defined(IMGUI_IMPL_WEBGPU_BACKEND_DAWN) == defined(IMGUI_IMPL_WEBGPU_BACKEND_WGPU)
@@ -350,7 +351,8 @@ static void ImGui_ImplWGPU_SetupRenderState(ImDrawData* draw_data, WGPURenderPas
     }
 
     // Setup viewport
-    wgpuRenderPassEncoderSetViewport(ctx, 0, 0, draw_data->FramebufferScale.x * draw_data->DisplaySize.x, draw_data->FramebufferScale.y * draw_data->DisplaySize.y, 0, 1);
+    // FIX(zig-gamedev): Clamp bounds to workaround WGPU on Vulkan validation error
+    wgpuRenderPassEncoderSetViewport(ctx, 0, 0, (float)(int)(draw_data->FramebufferScale.x * draw_data->DisplaySize.x), (float)(int)(draw_data->FramebufferScale.y * draw_data->DisplaySize.y), 0, 1);
 
     // Bind shader and vertex buffers
     wgpuRenderPassEncoderSetVertexBuffer(ctx, 0, fr->VertexBuffer, 0, fr->VertexBufferSize * sizeof(ImDrawVert));

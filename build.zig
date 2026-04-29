@@ -279,7 +279,11 @@ pub fn build(b: *std.Build) void {
                     "libs/imgui/backends/imgui_impl_glfw.cpp",
                     "libs/imgui/backends/imgui_impl_wgpu.cpp",
                 },
-                .flags = cflags,
+                .flags = &(cflags.* ++ .{
+                    "-DGLFW_INCLUDE_NONE",
+                    // TODO: This should be IMGUI_IMPL_WEBGPU_BACKEND_DAWN but we're using an old version of Dawn that looks more like wgpu_native
+                    "-DIMGUI_IMPL_WEBGPU_BACKEND_WGPU",
+                }),
             });
         },
         .glfw_opengl3 => {
@@ -303,7 +307,7 @@ pub fn build(b: *std.Build) void {
                     "libs/imgui/backends/imgui_impl_glfw.cpp",
                     "libs/imgui/backends/imgui_impl_dx12.cpp",
                 },
-                .flags = cflags,
+                .flags = &(cflags.* ++ .{"-DGLFW_INCLUDE_NONE"}),
             });
             imgui_mod.linkSystemLibrary("d3dcompiler_47", .{});
         },
@@ -327,13 +331,7 @@ pub fn build(b: *std.Build) void {
             if (b.lazyDependency("zglfw", .{})) |zglfw| {
                 imgui_mod.addIncludePath(zglfw.path("libs/glfw/include"));
             }
-            const sdk_env = std.process.getEnvVarOwned(b.allocator, "VULKAN_SDK") catch |err| switch (err) {
-                error.EnvironmentVariableNotFound => null,
-                else => {
-                    std.debug.print("Failed to get VULKAN_SDK: {s}\n", .{@errorName(err)});
-                    @panic("Unexpected error reading environment variable");
-                },
-            };
+            const sdk_env = b.graph.environ_map.get("VULKAN_SDK");
 
             if (options.vulkan_include) |path| {
                 imgui_mod.addSystemIncludePath(.{ .cwd_relative = path });
@@ -458,13 +456,7 @@ pub fn build(b: *std.Build) void {
             if (b.lazyDependency("zsdl", .{})) |zsdl| {
                 imgui_mod.addIncludePath(zsdl.path("libs/sdl3/include"));
             }
-            const sdk_env = std.process.getEnvVarOwned(b.allocator, "VULKAN_SDK") catch |err| switch (err) {
-                error.EnvironmentVariableNotFound => null,
-                else => {
-                    std.debug.print("Failed to get VULKAN_SDK: {s}\n", .{@errorName(err)});
-                    @panic("Unexpected error reading environment variable");
-                },
-            };
+            const sdk_env = b.graph.environ_map.get("VULKAN_SDK");
 
             if (options.vulkan_include) |path| {
                 imgui_mod.addSystemIncludePath(.{ .cwd_relative = path });

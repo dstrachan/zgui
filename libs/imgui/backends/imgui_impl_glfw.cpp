@@ -205,6 +205,7 @@ struct ImGui_ImplGlfw_Data
     GLFWwindow*             KeyOwnerWindows[GLFW_KEY_LAST];
     bool                    InstalledCallbacks;
     bool                    CallbacksChainForAllWindows;
+    bool                    WantUpdateMonitors;
     char                    BackendPlatformName[32];
 #ifdef EMSCRIPTEN_USE_EMBEDDED_GLFW3
     const char*             CanvasSelector;
@@ -669,6 +670,7 @@ static bool ImGui_ImplGlfw_Init(GLFWwindow* window, bool install_callbacks, Glfw
     bd->Context = ImGui::GetCurrentContext();
     bd->Window = window;
     bd->Time = 0.0;
+    bd->WantUpdateMonitors = true;
     ImGui_ImplGlfw_ContextMap_Add(window, bd->Context);
 
     ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
@@ -1051,6 +1053,16 @@ void ImGui_ImplGlfw_NewFrame()
     ImGui_ImplGlfw_Data* bd = ImGui_ImplGlfw_GetBackendData();
     IM_ASSERT(bd != nullptr && "Context or backend not initialized! Did you call ImGui_ImplGlfw_InitForXXX()?");
 
+    // Setup display size (every frame to accommodate for window resizing)
+    int w, h;
+    int display_w, display_h;
+    glfwGetWindowSize(bd->Window, &w, &h);
+    glfwGetFramebufferSize(bd->Window, &display_w, &display_h);
+    io.DisplaySize = ImVec2((float)w, (float)h);
+    if (w > 0 && h > 0)
+        io.DisplayFramebufferScale = ImVec2((float)display_w / (float)w, (float)display_h / (float)h);
+    if (bd->WantUpdateMonitors)
+        ImGui_ImplGlfw_UpdateMonitors();
     // Setup main viewport size (every frame to accommodate for window resizing)
     ImGui_ImplGlfw_GetWindowSizeAndFramebufferScale(bd->Window, &io.DisplaySize, &io.DisplayFramebufferScale);
     ImGui_ImplGlfw_UpdateMonitors();
